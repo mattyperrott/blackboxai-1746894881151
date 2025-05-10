@@ -1,0 +1,15 @@
+.mdl-button--fab .mdl-button__ripple-container {
+    mask-image: radial-gradient(circle, #fff, #000);
+}
+
+.appearance-none {
+    appearance: none;
+}
+
+[class*="align-"] {
+    display: inline-block;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
