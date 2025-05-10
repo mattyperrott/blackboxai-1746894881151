@@ -1,0 +1,60 @@
+MIT License
+
+Copyright (c) 2023 Epher Secure Chat
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Additional Terms:
+
+1. Cryptographic Notice
+   This software includes cryptographic functionality. The use, import, and/or
+   export of cryptographic software may be restricted in some jurisdictions.
+   It is your responsibility to comply with any applicable laws and regulations.
+
+2. Security Vulnerabilities
+   If you discover a security vulnerability within this software, please send
+   an email to security@example.com. All security vulnerabilities will be
+   promptly addressed.
+
+3. Third-Party Components
+   This software includes the following third-party components:
+   - Tailwind CSS (MIT License)
+   - Font Awesome (Font Awesome Free License)
+   - libsodium-wrappers (ISC License)
+
+4. Usage Restrictions
+   This software may not be used in any way that violates applicable laws or
+   regulations, including but not limited to data protection and privacy laws.
+
+5. Contributions
+   By contributing to this project, you agree that your contributions will be
+   licensed under the same MIT License terms.
+
+6. Disclaimer
+   This software implements cryptographic operations and security features.
+   While efforts have been made to implement these features correctly, no
+   guarantee is made about the security of this implementation. Use at your
+   own risk.
+
+7. Attribution
+   When using this software in your own projects, attribution is appreciated
+   but not required. If you do provide attribution, please include:
+   "Powered by Epher Secure Chat (https://github.com/your-org/epher-chat)"
+
+For questions about licensing or usage, please contact legal@example.com
