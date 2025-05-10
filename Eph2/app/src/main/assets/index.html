@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epher - Secure Chat</title>
+    
+    <!-- Material Design Lite (Local) -->
+    <link rel="stylesheet" href="vendor/mdl/mdl.min.css">
+    
+    <!-- Local Fonts -->
+    <link rel="stylesheet" href="vendor/fonts/roboto.css">
+    
+    <!-- Icons (Local) -->
+    <link rel="stylesheet" href="vendor/fontawesome/css/icons.css">
+    
+    <!-- Tailwind CSS (Local) -->
+    <link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    
+    <!-- Vendor Fixes -->
+    <link rel="stylesheet" href="css/vendor-fixes.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+    <div class="flex flex-col h-screen">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-md">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Epher</h1>
+                        <div id="room-id" class="text-sm text-gray-600 dark:text-gray-300"></div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div id="connection-status" class="flex items-center">
+                            <i class="fas fa-circle text-gray-400 connection-indicator"></i>
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-300">Disconnected</span>
+                        </div>
+                        <div id="transport-toggle" class="flex items-center space-x-2">
+                            <label for="transport-switch" class="text-sm text-gray-600 dark:text-gray-300">Transport:</label>
+                            <select id="transport-switch" class="rounded p-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="direct">Direct</option>
+                                <option value="yggdrasil">Yggdrasil</option>
+                            </select>
+                        </div>
+                        <button id="privacy-settings-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" title="Privacy Settings">
+                            <i class="fas fa-user-shield dark:text-white"></i>
+                        </button>
+                        <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <i class="fas fa-moon dark:text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Chat Area -->
+        <main class="flex-1 overflow-y-auto p-4" id="chat-area">
+            <div class="container mx-auto max-w-4xl">
+                <div id="messages" class="space-y-4"></div>
+            </div>
+        </main>
+
+        <!-- Message Input -->
+        <footer class="bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+            <div class="container mx-auto p-4 max-w-4xl">
+                <div class="flex space-x-4">
+                    <button id="file-upload-btn" 
+                            class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 
+                                   border border-gray-300 dark:border-gray-600 text-gray-600 
+                                   dark:text-gray-300 transition-colors duration-200"
+                            title="Attach File">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="file" id="file-upload" 
+                           accept="image/*, video/*, application/*" 
+                           class="hidden" />
+                    <input type="text" id="msg" 
+                           class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 
+                                  bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Type your message...">
+                    <button id="send" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg
+                                   transition-colors duration-200 flex items-center justify-center">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Send
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Error</h3>
+                <button id="close-error" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p id="error-message" class="text-gray-600 dark:text-gray-300 mb-4"></p>
+            <button onclick="document.getElementById('error-modal').classList.add('hidden')"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
