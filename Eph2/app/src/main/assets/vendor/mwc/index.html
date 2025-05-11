@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Material Web Components Setup</title>
+  <script type="module" src="https://unpkg.com/@material/mwc-button@0.25.3/mwc-button.js"></script>
+  <script type="module" src="https://unpkg.com/@material/mwc-textfield@0.25.3/mwc-textfield.js"></script>
+  <script type="module" src="https://unpkg.com/@material/mwc-dialog@0.25.3/mwc-dialog.js"></script>
+  <script type="module" src="https://unpkg.com/@material/mwc-icon-button@0.25.3/mwc-icon-button.js"></script>
+  <script type="module" src="https://unpkg.com/@material/mwc-checkbox@0.25.3/mwc-checkbox.js"></script>
+  <script type="module" src="https://unpkg.com/@material/mwc-list@0.25.3/mwc-list.js"></script>
+  <script type="module" src="https://unpkg.com/@material/mwc-drawer@0.25.3/mwc-drawer.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@material/mwc-theme@0.25.3/mwc-theme.css" />
+</head>
+<body>
+  <mwc-button raised label="Material Web Component Button"></mwc-button>
+  <mwc-textfield label="Material Text Field"></mwc-textfield>
+  <mwc-dialog heading="Material Dialog" id="dialog">
+    <div>Dialog content</div>
+    <mwc-button slot="primaryAction" dialogAction="ok">OK</mwc-button>
+    <mwc-button slot="secondaryAction" dialogAction="cancel">Cancel</mwc-button>
+  </mwc-dialog>
+</body>
+</html>
