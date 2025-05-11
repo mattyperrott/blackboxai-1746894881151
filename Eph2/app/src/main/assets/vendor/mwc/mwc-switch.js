@@ -1,0 +1,1 @@
+Redirecting to /@material/mwc-switch@0.27.0/mwc-switch.js
