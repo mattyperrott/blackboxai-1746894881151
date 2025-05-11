@@ -1,0 +1,1 @@
+Redirecting to /@material/mwc-drawer@0.27.0/mwc-drawer.js
