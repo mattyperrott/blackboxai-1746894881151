@@ -9,12 +9,15 @@ const KEEPALIVE_INTERVAL = 2000; // Keep-alive interval in ms
 class NetworkManager {
     constructor() {
         this.sockets = new Set();
+        this.verifiedPeers = new Map(); // Track verified peers and their keys
+        this.pendingVerifications = new Map(); // Track ongoing verifications
         this.swarm = null;
         this.isConnected = false;
         this.reconnectTimer = null;
         this.onMessageCallback = null;
         this.keepAliveInterval = null;
         this.transportMode = 'direct'; // 'direct' or 'yggdrasil'
+        this.roomPSK = null; // Room pre-shared key for HMAC
     }
 
     async initialize(roomId, preKeyBundle, onMessage) {
@@ -25,6 +28,9 @@ class NetworkManager {
             // Generate room key using sodium
             const keyBuf = sodium.crypto_generichash(32, Buffer.from(roomId));
             
+            // Derive room PSK for HMAC verification
+            this.roomPSK = sodium.crypto_generichash(32, Buffer.from(roomId + preKeyBundle.toString()));
+
             // Initialize swarm with appropriate transport
             this.swarm = new Hyperswarm({
                 // Configure for Yggdrasil if enabled
@@ -65,15 +71,32 @@ class NetworkManager {
     setupSwarmHandlers() {
         this.swarm.on('connection', (socket) => {
             try {
-                console.log('New peer connected');
+                console.log('New peer connected, initiating verification');
                 
-                this.sockets.add(socket);
-                this.isConnected = true;
+                // Generate random challenge
+                const challenge = sodium.randombytes_buf(32);
+                const verificationTimeout = setTimeout(() => {
+                    if (this.pendingVerifications.has(socket)) {
+                        console.warn('Peer verification timeout');
+                        this.handlePeerDisconnect(socket);
+                    }
+                }, 10000); // 10 seconds timeout
 
-                // Handle incoming data with packet shaping
+                // Store verification state
+                this.pendingVerifications.set(socket, {
+                    challenge,
+                    timeout: verificationTimeout
+                });
+
+                // Send challenge
+                const challengeMsg = this.padPacket(Buffer.from(JSON.stringify({
+                    type: 'verification_challenge',
+                    challenge: Array.from(challenge)
+                })));
+                socket.write(challengeMsg);
+
+                // Set up message handlers
                 socket.on('data', (data) => this.handleIncomingData(data, socket));
-
-                // Handle disconnection
                 socket.on('end', () => this.handlePeerDisconnect(socket));
                 socket.on('error', (error) => {
                     console.error('Socket error:', error);
@@ -95,6 +118,63 @@ class NetworkManager {
         });
     }
 
+    async verifyPeer(socket, challenge, response) {
+        try {
+            const verification = this.pendingVerifications.get(socket);
+            if (!verification) {
+                console.warn('No pending verification for peer');
+                return false;
+            }
+
+            // Clear verification timeout
+            clearTimeout(verification.timeout);
+            this.pendingVerifications.delete(socket);
+
+            // Verify HMAC response
+            const isValid = sodium.crypto_auth_verify(new Uint8Array(response), verification.challenge, this.roomPSK);
+
+            if (isValid) {
+                // Add to verified peers
+                this.verifiedPeers.set(socket, {
+                    verifiedAt: Date.now(),
+                    challenge: verification.challenge
+                });
+                this.sockets.add(socket);
+                this.isConnected = true;
+
+                // Send verification success
+                const successMsg = this.padPacket(Buffer.from(JSON.stringify({
+                    type: 'verification_success',
+                    timestamp: Date.now()
+                })));
+                socket.write(successMsg);
+
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Peer verification failed:', error);
+            return false;
+        }
+    }
+
+    async handleVerificationChallenge(socket, challenge) {
+        try {
+            // Calculate HMAC response using room PSK
+            const response = sodium.crypto_auth(new Uint8Array(challenge), this.roomPSK);
+            
+            // Send response
+            const responseMsg = this.padPacket(Buffer.from(JSON.stringify({
+                type: 'verification_response',
+                response: Array.from(response)
+            })));
+            socket.write(responseMsg);
+        } catch (error) {
+            console.error('Failed to handle verification challenge:', error);
+        }
+    }
+
     handleIncomingData(data, socket) {
         try {
             // Remove padding with length prefix
@@ -102,6 +182,28 @@ class NetworkManager {
             
             // Parse the message
             const message = JSON.parse(unpadded.toString());
+
+            // Handle verification messages
+            if (message.type === 'verification_challenge') {
+                this.handleVerificationChallenge(socket, message.challenge);
+                return;
+            }
+            
+            if (message.type === 'verification_response') {
+                this.verifyPeer(socket, message.challenge, message.response).then(isValid => {
+                    if (!isValid) {
+                        console.warn('Invalid verification response');
+                        this.handlePeerDisconnect(socket);
+                    }
+                });
+                return;
+            }
+
+            // Only process messages from verified peers
+            if (!this.verifiedPeers.has(socket)) {
+                console.warn('Received message from unverified peer');
+                return;
+            }
             
             // Handle keep-alive packets
             if (message.type === 'keepalive') {
