@@ -154,6 +154,17 @@ export async function cleanup() {
     }
 }
 
+// Derive PSK using Argon2id from roomID and password
+export async function derivePSK(roomID, password) {
+    try {
+        await initWorker();
+        return await sendToWorker('derivePSK', { roomID, password });
+    } catch (error) {
+        console.error('Failed to derive PSK:', error);
+        throw error;
+    }
+}
+
 // Handle page unload
 window.addEventListener('beforeunload', () => {
     cleanup();
