@@ -408,6 +408,52 @@ self.onmessage = async ({ data }) => {
     postMessage({ id, res, err });
 };
 
+// Argon2id PSK derivation
+async function derivePSK(roomID, password) {
+    const sodium = await ensureSodium();
+
+    const salt = sodium.crypto_generichash(16, Buffer.from(roomID));
+    const passwordBytes = new TextEncoder().encode(password);
+
+    const psk = sodium.crypto_pwhash(
+        32,
+        passwordBytes,
+        salt,
+        sodium.crypto_pwhash_OPSLIMIT_MODERATE,
+        sodium.crypto_pwhash_MEMLIMIT_MODERATE,
+        sodium.crypto_pwhash_ALG_ARGON2ID13
+    );
+
+    return Array.from(psk);
+}
+
+// Extend RPC handler to support derivePSK
+const originalOnMessage = self.onmessage;
+self.onmessage = async ({ data }) => {
+    const { id, op, args } = data;
+    let res, err = null;
+
+    try {
+        const sodium = await ensureSodium();
+
+        switch (op) {
+            case 'derivePSK': {
+                const { roomID, password } = args;
+                res = await derivePSK(roomID, password);
+                break;
+            }
+            default:
+                // Delegate to original handler for other ops
+                await originalOnMessage({ data });
+                return;
+        }
+    } catch (e) {
+        err = e.message;
+    }
+
+    postMessage({ id, res, err });
+};
+
 // Cleanup on termination
 self.addEventListener('unload', () => {
     stopKeepAlive();
