@@ -1,0 +1,281 @@
+/* Base styles */
+:root {
+    --message-sent: #1a73e8;
+    --message-received: #e8e8e8;
+}
+
+.dark {
+    --message-sent: #2b5797;
+    --message-received: #374151;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
+
+/* Connection status indicator */
+.connection-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.connection-indicator.connected {
+    color: #22c55e;
+}
+
+.connection-indicator.connecting {
+    color: #f59e0b;
+    animation: pulse 1.5s infinite;
+}
+
+/* Message bubbles */
+.message {
+    max-width: 80%;
+    margin: 8px 0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    position: relative;
+    animation: slideIn 0.3s ease-out;
+}
+
+.message-sent {
+    margin-left: auto;
+    background-color: var(--message-sent);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message-received {
+    margin-right: auto;
+    background-color: var(--message-received);
+    border-bottom-left-radius: 4px;
+}
+
+.message .timestamp {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-top: 4px;
+    display: block;
+}
+
+/* File attachments */
+.file-attachment {
+    margin-top: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 300px;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .file-attachment {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.file-attachment img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px 8px 0 0;
+    display: block;
+}
+
+.file-attachment video {
+    width: 100%;
+    max-height: 300px;
+    border-radius: 8px 8px 0 0;
+    display: block;
+}
+
+.file-info {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-size {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.file-download {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.dark .file-download {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.file-download:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.dark .file-download:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.file-download i {
+    margin-right: 12px;
+    font-size: 1.5em;
+    width: 24px;
+    text-align: center;
+}
+
+.file-download .file-info {
+    flex: 1;
+    padding: 0;
+}
+
+/* Message with file attachment */
+.message .file-attachment,
+.message .file-download {
+    margin-bottom: 4px;
+}
+
+.message-sent .file-download {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.message-sent .file-download:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.message-received .file-size {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.dark .message-received .file-size {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* File upload button styles */
+#file-upload-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+#file-upload-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.dark #file-upload-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#file-upload-btn i {
+    transition: transform 0.2s ease;
+}
+
+#file-upload-btn:hover i {
+    transform: rotate(15deg);
+}
+
+/* File upload button animation */
+@keyframes uploadProgress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(0); }
+}
+
+.uploading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.uploading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--message-sent);
+    animation: uploadProgress 2s ease-out infinite;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.5;
+    }
+}
+
+/* Error modal animation */
+.modal-enter {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-exit {
+    animation: modalFadeOut 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
