@@ -1,5 +1,4 @@
 const Hyperswarm = require('hyperswarm');
-const Hyperbeam = require('hyperbeam');
 const sodium = require('libsodium-wrappers');
 
 // Constants for packet shaping and timing
@@ -42,7 +41,7 @@ class NetworkManager {
                     console.warn('Connection timeout reached, attempting fallback transport');
                     this.setTransportMode(this.transportMode === 'direct' ? 'yggdrasil' : 'direct');
                 }
-            }, SecurityConfig.network.connectionTimeout);
+            }, 30000); // 30 seconds
             
             // Join the swarm with the room key
             this.swarm.join(keyBuf, { 
@@ -68,18 +67,17 @@ class NetworkManager {
             try {
                 console.log('New peer connected');
                 
-                const beam = new Hyperbeam(socket);
-                this.sockets.add(beam);
+                this.sockets.add(socket);
                 this.isConnected = true;
 
                 // Handle incoming data with packet shaping
-                beam.on('data', (data) => this.handleIncomingData(data, beam));
+                socket.on('data', (data) => this.handleIncomingData(data, socket));
 
                 // Handle disconnection
-                beam.on('end', () => this.handlePeerDisconnect(beam));
-                beam.on('error', (error) => {
-                    console.error('Beam error:', error);
-                    this.handlePeerDisconnect(beam);
+                socket.on('end', () => this.handlePeerDisconnect(socket));
+                socket.on('error', (error) => {
+                    console.error('Socket error:', error);
+                    this.handlePeerDisconnect(socket);
                 });
 
             } catch (error) {
@@ -97,9 +95,9 @@ class NetworkManager {
         });
     }
 
-    handleIncomingData(data, beam) {
+    handleIncomingData(data, socket) {
         try {
-            // Remove padding
+            // Remove padding with length prefix
             const unpadded = this.removePacketPadding(data);
             
             // Parse the message
@@ -107,7 +105,7 @@ class NetworkManager {
             
             // Handle keep-alive packets
             if (message.type === 'keepalive') {
-                this.handleKeepAlive(beam);
+                this.handleKeepAlive(socket);
                 return;
             }
 
@@ -119,14 +117,14 @@ class NetworkManager {
         }
     }
 
-    handleKeepAlive(beam) {
+    handleKeepAlive(socket) {
         try {
             // Send keep-alive response
             const response = this.padPacket(Buffer.from(JSON.stringify({
                 type: 'keepalive_ack',
                 timestamp: Date.now()
             })));
-            beam.write(response);
+            socket.write(response);
         } catch (error) {
             console.error('Failed to handle keep-alive:', error);
         }
@@ -157,12 +155,7 @@ class NetworkManager {
 
         for (const socket of this.sockets) {
             try {
-                // Bandwidth check before sending
-                if (this.canSendData(socket)) {
-                    socket.write(keepAlive);
-                } else {
-                    console.warn('Bandwidth limit reached, skipping keep-alive for socket');
-                }
+                socket.write(keepAlive);
             } catch (error) {
                 console.error('Failed to send keep-alive:', error);
                 this.handlePeerDisconnect(socket);
@@ -170,14 +163,63 @@ class NetworkManager {
         }
     }
 
-    canSendData(socket) {
-        // Implement bandwidth management logic here
-        // For now, allow all
-        return true;
+    addJitter(timestamp) {
+        const jitter = (Math.random() * JITTER_MAX * 2) - JITTER_MAX;
+        return timestamp + jitter;
     }
 
-    handlePeerDisconnect(beam) {
-        this.sockets.delete(beam);
+    async sendMessage(message) {
+        if (!this.isConnected) {
+            throw new Error('Not connected to any peers');
+        }
+
+        try {
+            // Add timestamp jitter
+            message.timestamp = this.addJitter(Date.now());
+            
+            // Convert to buffer and pad
+            const messageBuffer = this.padPacket(Buffer.from(JSON.stringify(message)));
+            
+            // Send to all peers
+            for (const socket of this.sockets) {
+                try {
+                    socket.write(messageBuffer);
+                } catch (error) {
+                    console.error('Failed to send to peer:', error);
+                    this.handlePeerDisconnect(socket);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            throw error;
+        }
+    }
+
+    padPacket(data) {
+        // Add 4-byte length prefix
+        const lengthBuffer = Buffer.alloc(4);
+        lengthBuffer.writeUInt32BE(data.length, 0);
+        const totalLength = 4 + data.length;
+        const paddedLength = Math.ceil(totalLength / PACKET_SIZE) * PACKET_SIZE;
+        const paddingLength = paddedLength - totalLength;
+        const padding = Buffer.alloc(paddingLength, 0); // zero padding
+        return Buffer.concat([lengthBuffer, data, padding], paddedLength);
+    }
+
+    removePacketPadding(data) {
+        // Read 4-byte length prefix
+        if (data.length < 4) {
+            throw new Error('Invalid packet: too short for length prefix');
+        }
+        const length = data.readUInt32BE(0);
+        if (length > data.length - 4) {
+            throw new Error('Invalid packet: length prefix exceeds data size');
+        }
+        return data.slice(4, 4 + length);
+    }
+
+    handlePeerDisconnect(socket) {
+        this.sockets.delete(socket);
         if (this.sockets.size === 0) {
             this.isConnected = false;
             this.attemptReconnect();
@@ -222,99 +264,6 @@ class NetworkManager {
                 const { roomId, preKeyBundle, onMessage } = this.savedParams;
                 this.initialize(roomId, preKeyBundle, onMessage);
             }
-        }
-    }
-
-    async initialize(roomId, preKeyBundle, onMessage) {
-        this.savedParams = { roomId, preKeyBundle, onMessage };
-        try {
-            await sodium.ready;
-            this.onMessageCallback = onMessage;
-
-            // Generate room key using sodium
-            const keyBuf = sodium.crypto_generichash(32, Buffer.from(roomId));
-            
-            // Initialize swarm with appropriate transport
-            this.swarm = new Hyperswarm({
-                // Configure for Yggdrasil if enabled
-                bootstrap: this.transportMode === 'yggdrasil' ? 
-                    ['yggdrasil://bootstrap.node'] : undefined
-            });
-            
-            // Set up event handlers
-            this.setupSwarmHandlers();
-
-            // Setup connection timeout
-            this.connectionTimeout = setTimeout(() => {
-                if (!this.isConnected) {
-                    console.warn('Connection timeout reached, attempting fallback transport');
-                    this.setTransportMode(this.transportMode === 'direct' ? 'yggdrasil' : 'direct');
-                }
-            }, SecurityConfig.network.connectionTimeout);
-            
-            // Join the swarm with the room key
-            this.swarm.join(keyBuf, { 
-                client: true, 
-                server: true,
-                announce: true,
-                lookup: true
-            });
-
-            // Start keep-alive mechanism
-            this.startKeepAlive();
-            
-            console.log('Initialized network with transport:', this.transportMode);
-
-        } catch (error) {
-            console.error('Failed to initialize network:', error);
-            throw error;
-        }
-    }
-
-    padPacket(data) {
-        const currentSize = data.length;
-        const targetSize = Math.ceil(currentSize / PACKET_SIZE) * PACKET_SIZE;
-        const padding = Buffer.alloc(targetSize - currentSize);
-        sodium.randombytes_buf(padding);
-        return Buffer.concat([data, padding]);
-    }
-
-    removePacketPadding(data) {
-        // Find the actual message end (before padding)
-        let end = data.length;
-        while (end > 0 && data[end - 1] === 0) end--;
-        return data.slice(0, end);
-    }
-
-    addJitter(timestamp) {
-        const jitter = (Math.random() * JITTER_MAX * 2) - JITTER_MAX;
-        return timestamp + jitter;
-    }
-
-    async sendMessage(message) {
-        if (!this.isConnected) {
-            throw new Error('Not connected to any peers');
-        }
-
-        try {
-            // Add timestamp jitter
-            message.timestamp = this.addJitter(Date.now());
-            
-            // Convert to buffer and pad
-            const messageBuffer = this.padPacket(Buffer.from(JSON.stringify(message)));
-            
-            // Send to all peers
-            for (const socket of this.sockets) {
-                try {
-                    socket.write(messageBuffer);
-                } catch (error) {
-                    console.error('Failed to send to peer:', error);
-                    this.handlePeerDisconnect(socket);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to send message:', error);
-            throw error;
         }
     }
 
